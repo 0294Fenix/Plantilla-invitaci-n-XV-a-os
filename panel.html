@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Panel · XV Gabriela</title>
+<link href="https://fonts.googleapis.com/css2?family=Kaushan+Script&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{--rose:#d9a8a6;--soft:#e8cdca;--brown:#4a2a28;--cream:#faf7ef}
+*{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--brown);font-family:'Cormorant Garamond',Georgia,serif;font-size:20px}
+.w{max-width:520px;margin:0 auto;padding:22px 18px 60px}
+h1{font-family:'Kaushan Script',cursive;font-weight:400;color:var(--rose);font-size:44px;margin:6px 0 2px;text-align:center}
+.sub{text-align:center;margin:0 0 18px;opacity:.7}
+input{width:100%;padding:14px;border:1.5px solid var(--rose);border-radius:12px;background:#fff;font:inherit;color:var(--brown)}
+.btn{background:var(--rose);color:#fff;border:0;border-radius:40px;padding:12px 26px;font:600 20px 'Cormorant Garamond',serif;cursor:pointer}
+#login{text-align:center;margin-top:50px}#login .btn{margin-top:14px}#err{color:#b0414f;min-height:24px}
+#app{display:none}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
+.k{background:#fff;border:1px solid var(--soft);border-radius:16px;padding:14px;text-align:center}
+.k b{display:block;font-size:42px;color:var(--rose);line-height:1}.k span{font-size:18px}
+.bar{display:flex;gap:8px;margin:10px 0}.bar .btn{padding:10px 18px;white-space:nowrap}
+.tabs{display:flex;gap:6px;margin:12px 0}.tab{flex:1;padding:9px 4px;border:1.5px solid var(--rose);background:none;border-radius:12px;font:600 18px 'Cormorant Garamond',serif;color:var(--brown);cursor:pointer}
+.tab.on{background:var(--rose);color:#fff}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#fff;border:1px solid var(--soft);border-radius:12px;padding:10px 14px;margin-bottom:8px}
+.row small{display:block;opacity:.6;font-size:15px}
+.bd{border-radius:20px;padding:3px 12px;font-size:17px;color:#fff;white-space:nowrap}.si{background:#6aa77f}.no{background:#c9776f}.pe{background:#b9b2a4}
+#upd{text-align:center;font-size:15px;opacity:.6;margin-top:14px}
+</style>
+</head>
+<body><div class="w">
+<h1>Panel de invitados</h1><p class="sub">XV años de Gabriela</p>
+
+<div id="login"><input id="pw" type="password" placeholder="Contraseña" autocomplete="current-password"><p id="err"></p><button class="btn" id="go">Entrar</button><p><a href="#" id="dg" style="font-size:16px;color:#8a7a77">Diagnóstico de conexión</a></p><pre id="out" style="text-align:left;white-space:pre-wrap;word-break:break-all;font-size:13px;background:#fff;border-radius:10px;padding:10px;display:none"></pre></div>
+
+<div id="app">
+ <div class="grid">
+  <div class="k"><b id="k1">0</b><span>Confirmaron</span></div>
+  <div class="k"><b id="k2">0</b><span>Personas asistirán</span></div>
+  <div class="k"><b id="k3">0</b><span>No asistirán</span></div>
+  <div class="k"><b id="k4">0</b><span>Pendientes</span></div>
+ </div>
+ <div class="tabs"><button class="tab on" data-t="all">Todos</button><button class="tab" data-t="si">Asisten</button><button class="tab" data-t="no">No asisten</button><button class="tab" data-t="pe">Pendientes</button></div>
+ <div class="bar"><input id="q" placeholder="Buscar nombre..."><button class="btn" id="re">↻</button></div>
+ <div id="list"></div><p id="upd"></p>
+</div></div>
+<script>
+/* ===== CONFIGURA AQUÍ ===== */
+var SCRIPT_URL="https://script.google.com/macros/s/AKfycbz4OYEsd7PHlsZt9fW9GZplum7RWzSD-auBMs7-VeIuGF7yd7uYwN-AsA95JwCPHDlm/exec";   // la misma URL (/exec) de tu Apps Script
+var INVITADOS=[];    // opcional, para ver pendientes. Ej: [{nombre:"Familia Pérez",pases:4},{nombre:"Ana López",pases:2}]
+/* ========================== */
+var $=function(i){return document.getElementById(i)},data=[],tab='all',clave=sessionStorage.getItem('xvk')||'';
+function esc(t){var d=document.createElement('div');d.textContent=t;return d.innerHTML}
+function jsonp(url,params,ok,fail){
+  var cb='cb'+Date.now()+Math.floor(Math.random()*1000),s=document.createElement('script'),done=false;
+  function end(){done=true;delete window[cb];s.remove()}
+  window[cb]=function(r){if(done)return;end();ok(r)};
+  s.onerror=function(){if(done)return;end();fail()};
+  setTimeout(function(){if(!done){end();fail()}},20000);
+  var qs=Object.keys(params).map(function(k){return k+'='+encodeURIComponent(params[k])}).join('&');
+  s.src=url+'?'+qs+'&callback='+cb;document.head.appendChild(s);
+}
+function load(){
+  if(!SCRIPT_URL){$('err').textContent='Falta SCRIPT_URL en el código.';return}
+  jsonp(SCRIPT_URL,{clave:clave},function(r){
+    if(!r.ok){sessionStorage.removeItem('xvk');$('app').style.display='none';$('login').style.display='';$('err').textContent=r.error==='clave'?'Contraseña incorrecta':'Error del script';return}
+    sessionStorage.setItem('xvk',clave);data=r.datos;$('login').style.display='none';$('app').style.display='block';
+    $('upd').textContent='Actualizado '+new Date().toLocaleTimeString('es-MX');draw();
+  },function(){$('err').textContent='No se pudo conectar [v3 …'+SCRIPT_URL.slice(-14)+']'});
+}
+function pend(){var hechos=data.map(function(d){return String(d.nombre).toLowerCase()});
+  return INVITADOS.filter(function(g){return hechos.indexOf(g.nombre.toLowerCase())<0})}
+function draw(){
+  var si=data.filter(function(d){return d.respuesta==='si'}),no=data.filter(function(d){return d.respuesta==='no'}),pe=pend();
+  $('k1').textContent=si.length;$('k2').textContent=si.reduce(function(a,d){return a+(+d.personas||0)},0);
+  $('k3').textContent=no.length;$('k4').textContent=INVITADOS.length?pe.length:'—';
+  var q=$('q').value.toLowerCase(),rows=[];
+  if(tab!=='pe')data.slice().reverse().forEach(function(d){if(tab==='all'||d.respuesta===tab)rows.push({n:d.nombre,s:d.respuesta,x:d.respuesta==='si'?d.personas+' de '+d.pases:'',f:new Date(d.fecha).toLocaleDateString('es-MX')})});
+  if(tab==='all'||tab==='pe')pe.forEach(function(g){rows.push({n:g.nombre,s:'pe',x:g.pases+' pases',f:''})});
+  $('list').innerHTML=rows.filter(function(r){return r.n.toLowerCase().indexOf(q)>=0}).map(function(r){
+    var t={si:'Asiste',no:'No asiste',pe:'Pendiente'}[r.s];
+    return '<div class="row"><div>'+esc(r.n)+'<small>'+esc(r.x+(r.f?' · '+r.f:''))+'</small></div><span class="bd '+r.s+'">'+t+'</span></div>'}).join('')||'<p style="text-align:center;opacity:.6">Sin resultados</p>';
+}
+
+$('dg').onclick=function(e){e.preventDefault();var o=$('out'),L=function(t){o.textContent+=t+'\n'};
+  o.style.display='block';o.textContent='';L('v4');L('Página: '+location.href);L('URL script: '+SCRIPT_URL);L('Navegador: '+navigator.userAgent.slice(0,90));
+  var u=SCRIPT_URL+'?clave='+encodeURIComponent($('pw').value||'x');
+  L('1) fetch…');
+  fetch(u).then(function(r){L('1) fetch estado '+r.status);return r.text()}).then(function(t){L('1) respuesta: '+t.slice(0,120))}).catch(function(er){L('1) fetch ERROR: '+er)});
+  L('2) script…');
+  var s=document.createElement('script'),cb='dg'+Date.now();
+  window[cb]=function(r){L('2) script OK: '+JSON.stringify(r).slice(0,100))};
+  s.onerror=function(){L('2) script ERROR de carga')};
+  s.src=u+'&callback='+cb;document.head.appendChild(s);
+  setTimeout(function(){L('(fin de pruebas, 15 s)')},15000);
+};
+$('go').onclick=function(){clave=$('pw').value;$('err').textContent='';load()};
+$('pw').onkeydown=function(e){if(e.key==='Enter')$('go').click()};
+$('re').onclick=load;$('q').oninput=draw;
+document.querySelectorAll('.tab').forEach(function(b){b.onclick=function(){document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on')});b.classList.add('on');tab=b.dataset.t;draw()}});
+if(clave)load();setInterval(function(){if(clave&&$('app').style.display==='block')load()},30000);
+</script>
+</body></html>
